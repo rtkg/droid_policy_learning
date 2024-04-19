@@ -10,25 +10,28 @@ from collections import OrderedDict
 # Note: Assumes naming of dataset in "datasets" for the full DROID dataset is
 # droid
 
-DATA_PATH = ""    # UPDATE WITH PATH TO RLDS DATASETS
-EXP_LOG_PATH = "" # UPDATE WITH PATH TO DESIRED LOGGING DIRECTORY
+DATA_PATH = "/home/krr2rng/Data/droid_datasets/"  # UPDATE WITH PATH TO RLDS DATASETS
+EXP_LOG_PATH = "/home/krr2rng/Logging/stacking_demo_local"  # UPDATE WITH PATH TO DESIRED LOGGING DIRECTORY
 EXP_NAMES = OrderedDict(
     [
         # Note: you can add co-training dataset here appending
         # a new dataset to "datasets" and adjusting "sample_weights"
         # accordingly
-        ("droid", {"datasets": ["droid"],
-                   "sample_weights": [1]})                                    
-    ])
+        ("droid", {"datasets": ["stacking_demo_droid_dataset"], "sample_weights": [1]})
+    ]
+)
 
 #############################################################################
+
 
 def make_generator_helper(args):
     algo_name_short = "diffusion_policy"
 
     generator = get_generator(
         algo_name="diffusion_policy",
-        config_file=os.path.join(base_path, 'robomimic/exps/templates/diffusion_policy.json'),
+        config_file=os.path.join(
+            base_path, "robomimic/exps/templates/diffusion_policy.json"
+        ),
         args=args,
         exp_log_path=EXP_LOG_PATH,
         algo_name_short=algo_name_short,
@@ -38,19 +41,31 @@ def make_generator_helper(args):
         args.ckpt_mode = "off"
 
     generator.add_param(
+        key="experiment.logging.wandb_proj_name",
+        name="",
+        group=-1,
+        values=["DROID_STACKING_DEMO_LOCAL"],
+    )
+
+    generator.add_param(
+        key="experiment.validate",
+        name="",
+        group=-1,
+        values=True,
+    )
+
+    generator.add_param(
         key="train.data_format",
         name="",
         group=-1,
-        values=[
-            "droid_rlds"
-        ],
+        values=["droid_rlds"],
     )
 
     generator.add_param(
         key="train.num_epochs",
         name="",
         group=-1,
-        values=[100000],
+        values=[100],
     )
 
     generator.add_param(
@@ -64,14 +79,14 @@ def make_generator_helper(args):
         key="train.shuffle_buffer_size",
         name="",
         group=-1,
-        values=[500000],
+        values=[5000],
     )
 
     generator.add_param(
         key="train.batch_size",
         name="bz",
         group=1212111,
-        values=[128],
+        values=[64],
         hidename=False,
     )
 
@@ -79,9 +94,7 @@ def make_generator_helper(args):
         key="train.subsample_length",
         name="subsample_length",
         group=7070707,
-        values=[
-            100
-        ],
+        values=[100],
         hidename=True,
     )
 
@@ -89,9 +102,7 @@ def make_generator_helper(args):
         key="train.num_parallel_calls",
         name="num_parallel_calls",
         group=404040404,
-        values=[
-            200
-        ],
+        values=[200],
         hidename=True,
     )
 
@@ -99,9 +110,7 @@ def make_generator_helper(args):
         key="train.traj_transform_threads",
         name="traj_transform_threads",
         group=303030303,
-        values=[
-            48
-        ],
+        values=[48],
         hidename=True,
     )
 
@@ -109,9 +118,7 @@ def make_generator_helper(args):
         key="train.traj_read_threads",
         name="traj_read_threads",
         group=908090809,
-        values=[
-            48
-        ],
+        values=[48],
         hidename=True,
     )
 
@@ -120,7 +127,7 @@ def make_generator_helper(args):
         name="noise_samples",
         group=1010101,
         values=[8],
-        value_names=["8"]
+        value_names=["8"],
     )
 
     # use ddim by default
@@ -150,18 +157,14 @@ def make_generator_helper(args):
             key="train.sample_weights",
             name="sample_weights",
             group=24988,
-            values=[
-                EXP_NAMES[k]["sample_weights"] for k in EXP_NAMES.keys()
-            ],
+            values=[EXP_NAMES[k]["sample_weights"] for k in EXP_NAMES.keys()],
         )
         generator.add_param(
             key="train.dataset_names",
             name="dataset_names",
             group=24988,
-            values=[
-                EXP_NAMES[k]["datasets"] for k in EXP_NAMES.keys()
-            ],
-            value_names=list(EXP_NAMES.keys())
+            values=[EXP_NAMES[k]["datasets"] for k in EXP_NAMES.keys()],
+            value_names=list(EXP_NAMES.keys()),
         )
         generator.add_param(
             key="train.action_keys",
@@ -211,9 +214,12 @@ def make_generator_helper(args):
             values=[
                 # ["camera/image/hand_camera_left_image"],
                 # ["camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image"],
-                ["camera/image/varied_camera_1_left_image", "camera/image/varied_camera_2_left_image"],
+                [
+                    "camera/image/varied_camera_1_left_image",
+                    "camera/image/varied_camera_2_left_image",
+                ],
                 # [
-                    # "camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image",
+                # "camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image",
                 #     "camera/image/varied_camera_1_left_image", "camera/image/varied_camera_1_right_image",
                 #     "camera/image/varied_camera_2_left_image", "camera/image/varied_camera_2_right_image",
                 # ],
@@ -223,7 +229,7 @@ def make_generator_helper(args):
                 # "wrist-stereo",
                 "2cams",
                 # "3cams-stereo",
-            ]
+            ],
         )
         generator.add_param(
             key="observation.encoder.rgb.obs_randomizer_class",
@@ -231,7 +237,7 @@ def make_generator_helper(args):
             group=130,
             values=[
                 # "ColorRandomizer", # jitter only
-                ["ColorRandomizer", "CropRandomizer"], # jitter, followed by crop
+                ["ColorRandomizer", "CropRandomizer"],  # jitter, followed by crop
             ],
             hidename=True,
         )
@@ -241,7 +247,15 @@ def make_generator_helper(args):
             group=130,
             values=[
                 # {}, # jitter only
-                [{}, {"crop_height": 116, "crop_width": 116, "num_crops": 1, "pos_enc": False}], # jitter, followed by crop
+                [
+                    {},
+                    {
+                        "crop_height": 116,
+                        "crop_width": 116,
+                        "num_crops": 1,
+                        "pos_enc": False,
+                    },
+                ],  # jitter, followed by crop
             ],
             hidename=True,
         )
@@ -251,20 +265,19 @@ def make_generator_helper(args):
             key="train.goal_mode",
             name="goal_mode",
             group=24986,
-            values = [
+            values=[
                 # "geom",
-                None, # Change this to "geom" to do goal conditioning
-
-            ]
+                None,  # Change this to "geom" to do goal conditioning
+            ],
         )
         generator.add_param(
             key="train.truncated_geom_factor",
             name="truncated_geom_factor",
             group=5555,
-            values = [
+            values=[
                 0.3,
                 # 0.5
-            ]
+            ],
         )
         generator.add_param(
             key="observation.modalities.obs.low_dim",
@@ -354,7 +367,6 @@ def make_generator_helper(args):
             hidename=False,
         )
 
-
     elif args.env == "kitchen":
         generator.add_param(
             key="train.data",
@@ -362,7 +374,12 @@ def make_generator_helper(args):
             group=2,
             values=[
                 # [{"path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/bowls/20230816_im84.hdf5", "filter_key": "100_demos"}],
-                [{"path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/all/20230806_im84.hdf5", "filter_key": "100_demos"}],
+                [
+                    {
+                        "path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/all/20230806_im84.hdf5",
+                        "filter_key": "100_demos",
+                    }
+                ],
                 # [{"path": "~/datasets/kitchen/prior/mimicgen/pnp_table_to_cab/viraj_mg_2023-08-10-20-31-14/demo_im84.hdf5", "filter_key": "100_demos"}],
                 # [{"path": "~/datasets/kitchen/prior/mimicgen/pnp_table_to_cab/viraj_mg_2023-08-10-20-31-14/demo_im84.hdf5", "filter_key": "1000_demos"}],
             ],
@@ -373,15 +390,13 @@ def make_generator_helper(args):
                 # "mg-1000",
             ],
         )
-        
+
         # update env config to use absolute action control
         generator.add_param(
             key="experiment.env_meta_update_dict",
             name="",
             group=-1,
-            values=[
-                {"env_kwargs": {"controller_configs": {"control_delta": False}}}
-            ],
+            values=[{"env_kwargs": {"controller_configs": {"control_delta": False}}}],
         )
 
         generator.add_param(
@@ -409,7 +424,9 @@ def make_generator_helper(args):
             group=2,
             values=[
                 [
-                    {"path": "~/datasets/square/ph/square_ph_abs_tmp.hdf5"}, # replace with your own path
+                    {
+                        "path": "~/datasets/square/ph/square_ph_abs_tmp.hdf5"
+                    },  # replace with your own path
                 ],
             ],
             value_names=[
@@ -422,11 +439,9 @@ def make_generator_helper(args):
             key="experiment.env_meta_update_dict",
             name="",
             group=-1,
-            values=[
-                {"env_kwargs": {"controller_configs": {"control_delta": False}}}
-            ],
+            values=[{"env_kwargs": {"controller_configs": {"control_delta": False}}}],
         )
-        
+
         generator.add_param(
             key="train.action_keys",
             name="ac_keys",
@@ -444,10 +459,9 @@ def make_generator_helper(args):
             ],
         )
 
-
     else:
         raise ValueError
-    
+
     generator.add_param(
         key="train.output_dir",
         name="",
@@ -456,13 +470,14 @@ def make_generator_helper(args):
             "{exp_log_path}/{env}/{mod}/{algo_name_short}".format(
                 exp_log_path=EXP_LOG_PATH,
                 env=args.env,
-                mod=args.mod, 
+                mod=args.mod,
                 algo_name_short=algo_name_short,
             )
         ],
     )
 
     return generator
+
 
 if __name__ == "__main__":
     parser = get_argparser()

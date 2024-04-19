@@ -1,6 +1,7 @@
 """
 Add image information to existing droid hdf5 file
 """
+
 import h5py
 import os
 import numpy as np
@@ -23,7 +24,9 @@ import pyzed.sl as sl
 import robomimic.utils.torch_utils as TorchUtils
 import robomimic.utils.tensor_utils as TensorUtils
 
-from droid.camera_utils.wrappers.recorded_multi_camera_wrapper import RecordedMultiCameraWrapper
+from droid.camera_utils.wrappers.recorded_multi_camera_wrapper import (
+    RecordedMultiCameraWrapper,
+)
 from droid.trajectory_utils.trajectory_reader import TrajectoryReader
 from droid.camera_utils.info import camera_type_to_string_dict
 
@@ -38,8 +41,11 @@ def get_cam_instrinsics(svo_path):
 
     return intrinsics
 
+
 def convert_dataset(path, args):
-    output_path = os.path.join(os.path.dirname(path), "trajectory_im{}.h5".format(args.imsize))
+    output_path = os.path.join(
+        os.path.dirname(path), "trajectory_im{}.h5".format(args.imsize)
+    )
     recording_folderpath = os.path.join(os.path.dirname(path), "recordings", "SVO")
 
     if os.path.exists(output_path):
@@ -50,12 +56,27 @@ def convert_dataset(path, args):
             return
         f.close()
 
-    
-    num_svo_files = len([f for f in os.listdir(recording_folderpath) if os.path.isfile(os.path.join(recording_folderpath, f))])
-    assert(num_svo_files == 3), "Didnt find 3 svos!"
+    num_svo_files = len(
+        [
+            f
+            for f in os.listdir(recording_folderpath)
+            if os.path.isfile(os.path.join(recording_folderpath, f))
+        ]
+    )
+    assert num_svo_files == 3, "Didnt find 3 svos!"
     camera_kwargs = dict(
-        hand_camera=dict(image=True, concatenate_images=False, resolution=(args.imsize, args.imsize), resize_func="cv2"),
-        varied_camera=dict(image=True, concatenate_images=False, resolution=(args.imsize, args.imsize), resize_func="cv2"),
+        hand_camera=dict(
+            image=True,
+            concatenate_images=False,
+            resolution=(args.imsize, args.imsize),
+            resize_func="cv2",
+        ),
+        varied_camera=dict(
+            image=True,
+            concatenate_images=False,
+            resolution=(args.imsize, args.imsize),
+            resize_func="cv2",
+        ),
     )
     camera_reader = RecordedMultiCameraWrapper(recording_folderpath, camera_kwargs)
 
@@ -97,20 +118,23 @@ def convert_dataset(path, args):
             varied_cam_ids.append(k)
         else:
             raise ValueError
-        
 
     # sort the camera ids: important to maintain consistency of cams between train and eval!
     hand_cam_ids = sorted(hand_cam_ids)
     varied_cam_ids = sorted(varied_cam_ids)
 
     IMAGE_NAME_TO_CAM_KEY_MAPPING = {}
-    IMAGE_NAME_TO_CAM_KEY_MAPPING["hand_camera_left_image"] = "{}_left".format(hand_cam_ids[0])
-    IMAGE_NAME_TO_CAM_KEY_MAPPING["hand_camera_right_image"] = "{}_right".format(hand_cam_ids[0])
-    
+    IMAGE_NAME_TO_CAM_KEY_MAPPING["hand_camera_left_image"] = "{}_left".format(
+        hand_cam_ids[0]
+    )
+    IMAGE_NAME_TO_CAM_KEY_MAPPING["hand_camera_right_image"] = "{}_right".format(
+        hand_cam_ids[0]
+    )
+
     # set up mapping for varied cameras
     for i in range(len(varied_cam_ids)):
         for side in ["left", "right"]:
-            cam_name = "varied_camera_{}_{}_image".format(i+1, side)
+            cam_name = "varied_camera_{}_{}_image".format(i + 1, side)
             cam_key = "{}_{}".format(varied_cam_ids[i], side)
             IMAGE_NAME_TO_CAM_KEY_MAPPING[cam_name] = cam_key
 
@@ -118,10 +142,10 @@ def convert_dataset(path, args):
     traj_reader = TrajectoryReader(path, read_images=False)
 
     for index in range(demo_len):
-        
+
         timestep = traj_reader.read_timestep(index=index)
         timestamp_dict = timestep["observation"]["timestamp"]["cameras"]
-        
+
         timestamp_dict = {}
         camera_obs = camera_reader.read_cameras(
             index=index, camera_type_dict=CAM_ID_TO_TYPE, timestamp_dict=timestamp_dict
@@ -135,8 +159,8 @@ def convert_dataset(path, args):
                 im = cv2.cvtColor(im, cv2.COLOR_BGRA2BGR)
 
             # perform bgr_to_rgb operation
-            im = im[:,:,::-1]
-            
+            im = im[:, :, ::-1]
+
             cam_data[cam_name].append(im)
 
     for cam_name in cam_data.keys():
@@ -148,51 +172,58 @@ def convert_dataset(path, args):
     # extract camera extrinsics data
     if "extrinsics" not in f["observation/camera"]:
         f["observation/camera"].create_group("extrinsics")
-    extrinsics_grp = f["observation/camera/extrinsics"]    
-    for (im_name, cam_key) in IMAGE_NAME_TO_CAM_KEY_MAPPING.items():
+    extrinsics_grp = f["observation/camera/extrinsics"]
+    for im_name, cam_key in IMAGE_NAME_TO_CAM_KEY_MAPPING.items():
         raw_data = f["observation/camera_extrinsics"][cam_key][:]
         raw_data = torch.from_numpy(raw_data)
-        pos = raw_data[:,0:3]
-        rot_mat = TorchUtils.euler_angles_to_matrix(raw_data[:,3:6], convention="XYZ")
+        pos = raw_data[:, 0:3]
+        rot_mat = TorchUtils.euler_angles_to_matrix(raw_data[:, 3:6], convention="XYZ")
         extrinsics = np.zeros((len(pos), 4, 4))
-        extrinsics[:,:3,:3] = TensorUtils.to_numpy(rot_mat)
-        extrinsics[:,:3,3] = TensorUtils.to_numpy(pos)
-        extrinsics[:,3,3] = 1.0
+        extrinsics[:, :3, :3] = TensorUtils.to_numpy(rot_mat)
+        extrinsics[:, :3, 3] = TensorUtils.to_numpy(pos)
+        extrinsics[:, 3, 3] = 1.0
         # invert the matrix to represent standard definition of extrinsics: from world to cam
         extrinsics = np.linalg.inv(extrinsics)
         extr_name = "_".join(im_name.split("_")[:-1])
         extrinsics_grp.create_dataset(extr_name, data=extrinsics)
-    
+
     svo_path = os.path.join(os.path.dirname(path), "recordings", "SVO")
-    cam_reader_svo = camera_reader #RecordedMultiCameraWrapper(svo_path, camera_kwargs)
+    cam_reader_svo = (
+        camera_reader  # RecordedMultiCameraWrapper(svo_path, camera_kwargs)
+    )
     if "intrinsics" not in f["observation/camera"]:
         f["observation/camera"].create_group("intrinsics")
-    intrinsics_grp = f["observation/camera/intrinsics"]    
+    intrinsics_grp = f["observation/camera/intrinsics"]
     for cam_id, svo_reader in cam_reader_svo.camera_dict.items():
         cam = svo_reader._cam
-        calib_params = cam.get_camera_information().camera_configuration.calibration_parameters
-        for (posftix, params)in zip(
-            ["_left", "_right"],
-            [calib_params.left_cam, calib_params.right_cam]
+        calib_params = (
+            cam.get_camera_information().camera_configuration.calibration_parameters
+        )
+        for posftix, params in zip(
+            ["_left", "_right"], [calib_params.left_cam, calib_params.right_cam]
         ):
             # get name to store intrinsics under
             cam_key = cam_id + posftix
             # reverse search for image name
             im_name = None
-            for (k, v) in IMAGE_NAME_TO_CAM_KEY_MAPPING.items():
+            for k, v in IMAGE_NAME_TO_CAM_KEY_MAPPING.items():
                 if v == cam_key:
                     im_name = k
                     break
-            if im_name is None: # sometimes the raw_key doesn't correspond to any camera we have images for
+            if (
+                im_name is None
+            ):  # sometimes the raw_key doesn't correspond to any camera we have images for
                 continue
             intr_name = "_".join(im_name.split("_")[:-1])
 
             # if intr_name not in intrinsics_grp:
             #     intrinsics_grp.create_group(intr_name)
             # cam_intr_grp = intrinsics_grp[intr_name]
-            
+
             # these lines are copied from _process_intrinsics function in svo_reader.py
-            cam_intrinsics = np.array([[params.fx, 0, params.cx], [0, params.fy, params.cy], [0, 0, 1]])
+            cam_intrinsics = np.array(
+                [[params.fx, 0, params.cx], [0, params.fy, params.cy], [0, 0, 1]]
+            )
             data = np.repeat(cam_intrinsics[None], demo_len, axis=0)
             intrinsics_grp.create_dataset(intr_name, data=data)
             # {
@@ -208,12 +239,13 @@ def convert_dataset(path, args):
     action_dict_group = f["action"]
     for in_ac_key in ["cartesian_position", "cartesian_velocity"]:
         in_action = action_dict_group[in_ac_key][:]
-        in_pos = in_action[:,:3].astype(np.float64)
-        in_rot = in_action[:,3:6].astype(np.float64) # in euler format
+        in_pos = in_action[:, :3].astype(np.float64)
+        in_rot = in_action[:, 3:6].astype(np.float64)  # in euler format
         rot_ = torch.from_numpy(in_rot)
         rot_6d = TorchUtils.euler_angles_to_rot_6d(
-            rot_, convention="XYZ",
-        ) 
+            rot_,
+            convention="XYZ",
+        )
         rot_6d = rot_6d.numpy().astype(np.float64)
 
         if in_ac_key == "cartesian_position":
@@ -222,11 +254,11 @@ def convert_dataset(path, args):
             prefix = "rel_"
         else:
             raise ValueError
-        
+
         this_action_dict = {
-            prefix + 'pos': in_pos,
-            prefix + 'rot_euler': in_rot,
-            prefix + 'rot_6d': rot_6d,
+            prefix + "pos": in_pos,
+            prefix + "rot_euler": in_rot,
+            prefix + "rot_6d": rot_6d,
         }
         for key, data in this_action_dict.items():
             if key in action_dict_group:
@@ -235,7 +267,10 @@ def convert_dataset(path, args):
 
     # ensure all action keys are batched (ie., are not 0-dimensional)
     for k in action_dict_group:
-        if isinstance(action_dict_group[k], h5py.Dataset) and len(action_dict_group[k].shape) == 1:
+        if (
+            isinstance(action_dict_group[k], h5py.Dataset)
+            and len(action_dict_group[k].shape) == 1
+        ):
             reshaped_values = np.reshape(action_dict_group[k][:], (-1, 1))
             del action_dict_group[k]
             action_dict_group.create_dataset(k, data=reshaped_values)
@@ -251,9 +286,10 @@ def convert_dataset(path, args):
     camera_reader.disable_cameras()
     del camera_reader
 
+
 def remove_timesteps(f, timesteps_to_remove):
     total_timesteps = f["action/cartesian_position"].shape[0]
-    
+
     def remove_timesteps_for_group(g):
         for k in g:
             if isinstance(g[k], h5py._hl.dataset.Dataset):
@@ -279,7 +315,7 @@ if __name__ == "__main__":
         "--folder",
         type=str,
         help="folder containing hdf5's to add camera images to",
-        default="~/datasets/droid/success"
+        default="~/Data/droid_datasets/droid_100",
     )
 
     parser.add_argument(
@@ -294,12 +330,14 @@ if __name__ == "__main__":
         action="store_true",
         help="override the default behavior of truncating idle timesteps",
     )
-    
+
     args = parser.parse_args()
 
     datasets = []
     j = os.walk(os.path.expanduser(args.folder))
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
     for root, dirs, files in j:
         for f in files:
             if f == "trajectory.h5":
