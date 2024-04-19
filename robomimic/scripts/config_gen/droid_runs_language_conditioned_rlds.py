@@ -216,7 +216,7 @@ def make_generator_helper(args):
                 # ["camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image"],
                 [
                     "camera/image/varied_camera_1_left_image",
-                    "camera/image/varied_camera_2_left_image",
+                    "camera/image/hand_camera_left_image",
                 ],
                 # [
                 # "camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image",
@@ -226,8 +226,8 @@ def make_generator_helper(args):
             ],
             value_names=[
                 # "wrist",
-                # "wrist-stereo",
-                "2cams",
+                "wrist-stereo",
+                # "2cams",
                 # "3cams-stereo",
             ],
         )

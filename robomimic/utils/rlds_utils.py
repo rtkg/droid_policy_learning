@@ -49,7 +49,7 @@ def robomimic_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
                 trajectory["observation"]["image_primary"], tf.float32
             )
             / 255.0,
-            "camera/image/varied_camera_2_left_image": tf.cast(
+            "camera/image/hand_camera_left_image": tf.cast(
                 trajectory["observation"]["image_secondary"], tf.float32
             )
             / 255.0,
@@ -68,7 +68,6 @@ def robomimic_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 DROID_TO_RLDS_OBS_KEY_MAP = {
     "camera/image/varied_camera_1_left_image": "exterior_image_1_left",
-    "camera/image/varied_camera_2_left_image": "exterior_image_2_left",
     "camera/image/hand_camera_left_image": "wrist_image_left",
 }
 

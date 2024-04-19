@@ -6,12 +6,12 @@ import numpy as np
 #############################################################################
 # *************** Replace with your paths/config information ****************
 
-MANIFEST_PATH = "" # UPDATE WITH PATH TO MANIFEST
+MANIFEST_PATH = ""  # UPDATE WITH PATH TO MANIFEST
 # MANIFEST_2_PATH = ""
 EXP_LOG_PATH = ""  # UPDATE WITH PATH TO DESIRED LOGGING DIRECTORY
 
 ## Define training Dataset
-with open(MANIFEST_PATH, 'r') as file:
+with open(MANIFEST_PATH, "r") as file:
     dataset1 = json.load(file)
 N_D1 = len(dataset1)
 
@@ -22,12 +22,15 @@ N_D1 = len(dataset1)
 
 #############################################################################
 
+
 def make_generator_helper(args):
     algo_name_short = "diffusion_policy"
 
     generator = get_generator(
         algo_name="diffusion_policy",
-        config_file=os.path.join(base_path, 'robomimic/exps/templates/diffusion_policy.json'),
+        config_file=os.path.join(
+            base_path, "robomimic/exps/templates/diffusion_policy.json"
+        ),
         args=args,
         exp_log_path=EXP_LOG_PATH,
         algo_name_short=algo_name_short,
@@ -63,7 +66,7 @@ def make_generator_helper(args):
         name="noise_samples",
         group=1010101,
         values=[8],
-        value_names=["8"]
+        value_names=["8"],
     )
 
     # use ddim by default
@@ -112,9 +115,12 @@ def make_generator_helper(args):
             values=[
                 # ["camera/image/hand_camera_left_image"],
                 # ["camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image"],
-                ["camera/image/varied_camera_1_left_image", "camera/image/varied_camera_2_left_image"],
+                [
+                    "camera/image/varied_camera_1_left_image",
+                    "camera/image/hand_camera_left_image",
+                ],
                 # [
-                    # "camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image",
+                # "camera/image/hand_camera_left_image", "camera/image/hand_camera_right_image",
                 #     "camera/image/varied_camera_1_left_image", "camera/image/varied_camera_1_right_image",
                 #     "camera/image/varied_camera_2_left_image", "camera/image/varied_camera_2_right_image",
                 # ],
@@ -124,7 +130,7 @@ def make_generator_helper(args):
                 # "wrist-stereo",
                 "2cams",
                 # "3cams-stereo",
-            ]
+            ],
         )
         generator.add_param(
             key="observation.encoder.rgb.obs_randomizer_class",
@@ -132,7 +138,7 @@ def make_generator_helper(args):
             group=130,
             values=[
                 # "ColorRandomizer", # jitter only
-                ["ColorRandomizer", "CropRandomizer"], # jitter, followed by crop
+                ["ColorRandomizer", "CropRandomizer"],  # jitter, followed by crop
             ],
             hidename=True,
         )
@@ -142,7 +148,15 @@ def make_generator_helper(args):
             group=130,
             values=[
                 # {}, # jitter only
-                [{}, {"crop_height": 116, "crop_width": 116, "num_crops": 1, "pos_enc": False}], # jitter, followed by crop
+                [
+                    {},
+                    {
+                        "crop_height": 116,
+                        "crop_width": 116,
+                        "num_crops": 1,
+                        "pos_enc": False,
+                    },
+                ],  # jitter, followed by crop
             ],
             hidename=True,
         )
@@ -152,20 +166,19 @@ def make_generator_helper(args):
             key="train.goal_mode",
             name="goal_mode",
             group=24986,
-            values = [
+            values=[
                 # "geom",
-                None, # Change this to "geom" to do goal conditioning
-
-            ]
+                None,  # Change this to "geom" to do goal conditioning
+            ],
         )
         generator.add_param(
             key="train.truncated_geom_factor",
             name="truncated_geom_factor",
             group=5555,
-            values = [
+            values=[
                 0.3,
                 # 0.5
-            ]
+            ],
         )
         generator.add_param(
             key="observation.modalities.obs.low_dim",
@@ -174,8 +187,9 @@ def make_generator_helper(args):
             values=[
                 # ["robot_state/cartesian_position", "robot_state/gripper_position"],
                 [
-                    "robot_state/cartesian_position", "robot_state/gripper_position",
-                    "lang_fixed/language_distilbert"
+                    "robot_state/cartesian_position",
+                    "robot_state/gripper_position",
+                    "lang_fixed/language_distilbert",
                 ]
             ],
             value_names=[
@@ -269,7 +283,7 @@ def make_generator_helper(args):
                 dataset1,
                 # [{"path": p["path"], "weight": (0.5 / N_D1} for p in dataset1] + [{"path": p["path"], "weight": (0.5 / N_D2} for p in dataset2],
             ],
-	    value_names=[
+            value_names=[
                 "justdataset1",
                 # "dataset1and2cotrain"
             ],
@@ -283,7 +297,6 @@ def make_generator_helper(args):
             value_names=[""],
         )
 
-
     elif args.env == "kitchen":
         generator.add_param(
             key="train.data",
@@ -291,7 +304,12 @@ def make_generator_helper(args):
             group=2,
             values=[
                 # [{"path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/bowls/20230816_im84.hdf5", "filter_key": "100_demos"}],
-                [{"path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/all/20230806_im84.hdf5", "filter_key": "100_demos"}],
+                [
+                    {
+                        "path": "~/datasets/kitchen/prior/human_demos/pnp_table_to_cab/all/20230806_im84.hdf5",
+                        "filter_key": "100_demos",
+                    }
+                ],
                 # [{"path": "~/datasets/kitchen/prior/mimicgen/pnp_table_to_cab/viraj_mg_2023-08-10-20-31-14/demo_im84.hdf5", "filter_key": "100_demos"}],
                 # [{"path": "~/datasets/kitchen/prior/mimicgen/pnp_table_to_cab/viraj_mg_2023-08-10-20-31-14/demo_im84.hdf5", "filter_key": "1000_demos"}],
             ],
@@ -302,15 +320,13 @@ def make_generator_helper(args):
                 # "mg-1000",
             ],
         )
-        
+
         # update env config to use absolute action control
         generator.add_param(
             key="experiment.env_meta_update_dict",
             name="",
             group=-1,
-            values=[
-                {"env_kwargs": {"controller_configs": {"control_delta": False}}}
-            ],
+            values=[{"env_kwargs": {"controller_configs": {"control_delta": False}}}],
         )
 
         generator.add_param(
@@ -338,7 +354,9 @@ def make_generator_helper(args):
             group=2,
             values=[
                 [
-                    {"path": "~/datasets/square/ph/square_ph_abs_tmp.hdf5"}, # replace with your own path
+                    {
+                        "path": "~/datasets/square/ph/square_ph_abs_tmp.hdf5"
+                    },  # replace with your own path
                 ],
             ],
             value_names=[
@@ -351,11 +369,9 @@ def make_generator_helper(args):
             key="experiment.env_meta_update_dict",
             name="",
             group=-1,
-            values=[
-                {"env_kwargs": {"controller_configs": {"control_delta": False}}}
-            ],
+            values=[{"env_kwargs": {"controller_configs": {"control_delta": False}}}],
         )
-        
+
         generator.add_param(
             key="train.action_keys",
             name="ac_keys",
@@ -373,10 +389,9 @@ def make_generator_helper(args):
             ],
         )
 
-
     else:
         raise ValueError
-    
+
     generator.add_param(
         key="train.output_dir",
         name="",
@@ -385,13 +400,14 @@ def make_generator_helper(args):
             "{exp_log_path}/{env}/{mod}/{algo_name_short}".format(
                 exp_log_path=EXP_LOG_PATH,
                 env=args.env,
-                mod=args.mod, 
+                mod=args.mod,
                 algo_name_short=algo_name_short,
             )
         ],
     )
 
     return generator
+
 
 if __name__ == "__main__":
     parser = get_argparser()
